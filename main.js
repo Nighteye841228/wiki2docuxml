@@ -34,6 +34,8 @@ const app = new Vue({
         tempSelectMenu: [],
         selectedBookMenuPool: [],
         menuIndexCount: 0,
+        refLinks: [],
+        selectRefLinks: [],
     },
     methods: {
         cleanUrlField: function () {
@@ -82,6 +84,10 @@ const app = new Vue({
             this.tempSelectMenu = [];
             this.isAddMenuToDownload = false;
         },
+        getRefLink: function (index) {
+            this.refLinks = [];
+            getDeeperLink(this.extendedLinks[index]);
+        },
         searchDeeper: function () {
             this.extendedLinks = [];
             this.confirmLinks = [];
@@ -97,9 +103,13 @@ const app = new Vue({
             return 1;
         },
         confirmAdd: function (flag) {
-            this.wikiUrls = flag ? this.confirmLinks.join("\n") : "";
+            let x = this.extendedLinks;
+            let y = this.selectRefLinks;
+            if (flag)
+                this.extendedLinks = this.extendedLinks.concat(
+                    this.selectRefLinks
+                );
             this.isAddExtendedLinks = false;
-            this.extendedLinks = [];
         },
         checkContentValue: function (obj) {
             obj.isFixContent = !obj.isFixContent;
@@ -215,7 +225,8 @@ async function getDeeperLink(pageNames) {
                 }
             );
             let newLinks = await getExtendedLinks(apiBackJson.data.parse);
-            app.extendedLinks = app.extendedLinks.concat(newLinks);
+            newLinks = newLinks.filter((x) => x.indexOf(pageNames) === -1);
+            app.refLinks = app.refLinks.concat(newLinks);
         } catch (error) {
             console.log(error);
             alert(`請求出錯！`);
@@ -667,7 +678,7 @@ function tableTreeGenerate(wikis) {
             let temp = level.find(({ id }) => key === id);
             let isLeaf = true;
             if (!temp) {
-                isLeaf = index === logArray.length - 1 ? true : false;
+                isLeaf = index === logArray.length ? true : false;
                 temp = {
                     id: key,
                     label: key,
@@ -694,17 +705,19 @@ function treeIndexSort(resultTree, path = "", count = 1) {
         iterTreeCount++
     ) {
         resultTree[iterTreeCount].index = count;
-        resultTree[iterTreeCount].id =
-            path === ""
-                ? `${resultTree[iterTreeCount].label}`
-                : `${path}/${resultTree[iterTreeCount].label}`;
+        resultTree[
+            iterTreeCount
+        ].id = `${path}/${resultTree[iterTreeCount].label}`.replace(/^\//, "");
+        let expo = resultTree[iterTreeCount];
         count++;
-        if (!resultTree[iterTreeCount].isLeaf) {
+        if (resultTree[iterTreeCount].children.length !== 0) {
             count = treeIndexSort(
                 resultTree[iterTreeCount].children,
                 resultTree[iterTreeCount].id,
                 count
             );
+        } else {
+            resultTree[iterTreeCount].isLeaf = true;
         }
     }
     return count;

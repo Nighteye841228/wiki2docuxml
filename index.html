@@ -72,9 +72,9 @@
                         @click="confirmAdd(0)"></button>
                 </header>
                 <section class="modal-card-body">
-                    <div v-for="(link,index) in extendedLinks"><input
+                    <div v-for="(link,index) in refLinks"><input
                             type="checkbox" :value="link"
-                            v-model="confirmLinks">{{ link }}
+                            v-model="selectRefLinks">{{ link }}
                     </div>
                 </section>
                 <footer class="modal-card-foot">
@@ -82,8 +82,8 @@
                         @click="confirmAdd(1)">Save changes</button>
                     <button class="button"
                         @click="confirmAdd(0)">Cancel</button>
-                    <button type="button" class="button"
-                        @click="selectAllExtendLinks">全選</button>
+                    <!-- <button type="button" class="button"
+                        @click="selectAllExtendLinks">全選</button> -->
                 </footer>
             </div>
         </div>
@@ -94,7 +94,7 @@
                 <header class="modal-card-head">
                     <p class="modal-card-title">選擇需要的關鍵字</p>
                     <button class="delete" aria-label="close"
-                        @click="confirmAdd(0)"></button>
+                        @click="isAddMenuToDownload = false"></button>
                 </header>
                 <section class="modal-card-body is-medium">
                     <treeselect
@@ -226,7 +226,7 @@
                                                 @click="getMenuOfContent(index)">顯示目錄結構</button>
                                         </td>
                                         <td>
-                                            <button class="button">檢視</button>
+                                            <button class="button" @click="getRefLink(index)">檢視</button>
                                         </td>
                                     </tr>
                                 </tbody>
