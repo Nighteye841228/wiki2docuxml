@@ -52,6 +52,9 @@
                 <a class="navbar-item" target="_blank" href="../../userMain/">
                     我的資料庫
                 </a>
+                <a class="navbar-item" target="_blank" href="https://imgur.com/a/or62eEO">
+                    教學（暫）
+                </a>
 
                 <a role="button" class="navbar-burger" aria-label="menu"
                     aria-expanded="false">
@@ -219,7 +222,7 @@
                                         <th>{{ extendedLink }}
                                         </th>
                                         <td>
-                                            <button class="button">顯示簡介</button>
+                                            <button class="button" @click="getSnippet">顯示簡介</button>
                                         </td>
                                         <td>
                                             <button class="button"
@@ -263,7 +266,7 @@
             </div>
         </div>
 
-        <div class="section" v-if="isInputDataValid">
+        <!-- <div class="section" v-if="isInputDataValid">
             <div class="container">
                 <label class="label is-large">Metadata編輯&預覽</label>
                 <div class="field">
@@ -408,7 +411,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 
 

@@ -57,6 +57,9 @@ const app = new Vue({
             this.confirmLinks = [];
             searchWord(this.sourceWord);
         },
+        getSnippet: async function () {
+            getSnippet("水經注");
+        },
         getMenuOfContent: async function (index) {
             let targetFindExistedMenu = this.tableOfContents.find(
                 (x) => x.index === index
@@ -721,4 +724,24 @@ function treeIndexSort(resultTree, path = "", count = 1) {
         }
     }
     return count;
+}
+
+async function getSnippet(title) {
+    try {
+        let apiBackJson = await axios.get(
+            "https://zh.wikisource.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&utf8",
+            {
+                params: {
+                    titles: title,
+                    origin: "*",
+                },
+            }
+        );
+        apiBackJson = apiBackJson.data;
+        let wikiDocNum = getWikiNum(apiBackJson.query.pages);
+        let dirtyText = apiBackJson.query.pages[wikiDocNum].revisions[0]["*"];
+        let wikiTitle = apiBackJson.query.pages[wikiDocNum].title;
+    } catch (error) {
+        // console.log(error);
+    }
 }
