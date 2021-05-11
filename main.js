@@ -80,7 +80,7 @@ const app = new Vue({
                 index: this.menuIndexCount,
             });
             this.tempSelectMenu = [];
-            isAddMenuToDownload = false;
+            this.isAddMenuToDownload = false;
         },
         searchDeeper: function () {
             this.extendedLinks = [];
