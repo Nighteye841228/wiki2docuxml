@@ -1,6 +1,7 @@
 $(document).ready();
 let dt = new Date();
 let textCount = 1;
+Vue.component("treeselect", VueTreeselect.Treeselect);
 
 const app = new Vue({
     el: "#app",
@@ -19,6 +20,7 @@ const app = new Vue({
         filename: "",
         isSeperateByParagraph: "default",
         isAddExtendedLinks: false,
+        isAddMenuToDownload: false,
         extendedLinks: [],
         confirmLinks: [],
         sourceWord: "",
@@ -26,6 +28,12 @@ const app = new Vue({
         corpusDefault: "文獻集名稱：預設「我的資料集」",
         tableOfContents: [],
         tempMenuList: [],
+        treeShowMenu: [],
+        sortValueBy: "INDEX",
+        valueConsistsOf: "ALL",
+        tempSelectMenu: [],
+        selectedBookMenuPool: [],
+        menuIndexCount: 0,
     },
     methods: {
         cleanUrlField: function () {
@@ -48,13 +56,31 @@ const app = new Vue({
             searchWord(this.sourceWord);
         },
         getMenuOfContent: async function (index) {
-            await getWikisourceJson(this.extendedLinks[index], 0);
-            this.tableOfContents.push({
-                index: index,
-                menu: this.tempMenuList,
-            });
+            let targetFindExistedMenu = this.tableOfContents.find(
+                (x) => x.index === index
+            );
+            this.menuIndexCount = index;
+            if (targetFindExistedMenu != undefined) {
+                this.treeShowMenu = targetFindExistedMenu.menu;
+                this.isAddMenuToDownload = true;
+            } else {
+                await getWikisourceJson(this.extendedLinks[index], 0);
+                this.tableOfContents.push({
+                    index: index,
+                    menu: this.tempMenuList,
+                });
+                this.treeShowMenu = this.tempMenuList;
+            }
             this.tempMenuList = [];
-            console.log(this.tableOfContents);
+            this.tempSelectMenu = [];
+        },
+        addSelectedMenuItem: function () {
+            this.selectedBookMenuPool.push({
+                menu: this.tempSelectMenu,
+                index: this.menuIndexCount,
+            });
+            this.tempSelectMenu = [];
+            isAddMenuToDownload = false;
         },
         searchDeeper: function () {
             this.extendedLinks = [];
@@ -617,7 +643,7 @@ async function getWikisourceJson(title, count, saveContent = {}) {
         //     }
         // })
     } catch (error) {
-        console.log(error);
+        // console.log(error);
     }
 }
 
@@ -658,6 +684,7 @@ function tableTreeGenerate(wikis) {
     treeIndexSort(result);
     console.log(result);
     app.tempMenuList = result;
+    app.isAddMenuToDownload = true;
 }
 
 function treeIndexSort(resultTree, path = "", count = 1) {

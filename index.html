@@ -11,17 +11,32 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.8.0/css/bulma.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.1/axios.min.js"></script>
+        src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.1/axios.min.js">
+    </script>
     <script src="https://code.jquery.com/jquery-3.5.0.min.js"
         crossorigin="anonymous"></script>
     <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/vue-clipboard2/0.3.1/vue-clipboard.min.js"></script>
+        src="https://cdnjs.cloudflare.com/ajax/libs/vue-clipboard2/0.3.1/vue-clipboard.min.js">
+    </script>
+    <script src="https://unpkg.com/buefy/dist/buefy.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.umd.min.js">
+    </script>
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.min.css" />
+    <script src="https://unpkg.com/buefy/dist/components/table"></script>
+    <script src="https://unpkg.com/buefy/dist/components/input"></script>
+    <link rel="stylesheet" href="https://unpkg.com/buefy/dist/buefy.min.css" />
 
 </head>
 
 <style>
     [v-cloak] {
         display: none;
+    }
+    .modal-card-body {
+        min-height: 18em;
+        overflow: auto;
     }
 </style>
 
@@ -34,8 +49,7 @@
                     href="../../../index2_20181204.html">
                     首頁
                 </a>
-                <a class="navbar-item" target="_blank"
-                    href="../../userMain/">
+                <a class="navbar-item" target="_blank" href="../../userMain/">
                     我的資料庫
                 </a>
 
@@ -70,6 +84,42 @@
                         @click="confirmAdd(0)">Cancel</button>
                     <button type="button" class="button"
                         @click="selectAllExtendLinks">全選</button>
+                </footer>
+            </div>
+        </div>
+
+        <div class="modal" :class={'is-active':isAddMenuToDownload}>
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">選擇需要的關鍵字</p>
+                    <button class="delete" aria-label="close"
+                        @click="confirmAdd(0)"></button>
+                </header>
+                <section class="modal-card-body is-medium">
+                    <treeselect
+                        v-model="tempSelectMenu"
+                        :multiple="true"
+                        :options="treeShowMenu"
+                        :sort-value-by="sortValueBy"
+                        :value-consists-of="valueConsistsOf"
+                        :auto-select-descendants="true"
+                        :limit="10"
+                    />
+                </section>
+                <hr style="height:10px;margin:0px">
+                <section class="modal-card-body">
+                    <div class="content">
+                        <ul v-for="item in tempSelectMenu">
+                            <li>{{item}}</li>
+                        </ul>
+                    </div>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button is-success"
+                        @click="addSelectedMenuItem">Save changes</button>
+                    <button class="button"
+                        @click="isAddMenuToDownload = false">Cancel</button>
                 </footer>
             </div>
         </div>
@@ -172,7 +222,8 @@
                                             <button class="button">顯示簡介</button>
                                         </td>
                                         <td>
-                                            <button class="button" @click="getMenuOfContent(index)">顯示目錄結構</button>
+                                            <button class="button"
+                                                @click="getMenuOfContent(index)">顯示目錄結構</button>
                                         </td>
                                         <td>
                                             <button class="button">檢視</button>
