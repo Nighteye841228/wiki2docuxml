@@ -610,52 +610,51 @@ async function getWikisourceJson(title, count, saveContent = {}) {
         let wikiDocNum = getWikiNum(apiBackJson.query.pages);
         let dirtyText = apiBackJson.query.pages[wikiDocNum].revisions[0]["*"];
         let wikiTitle = apiBackJson.query.pages[wikiDocNum].title;
+        // console.log(dirtyText);
         let cleanText = dirtyText.match(/.*\[\[(\/*.*)\|*.*\]\]/gm);
         cleanText = cleanText
             .join("\n")
             .replace(/^\n/gm, "")
             .replace(/^\n/gm, "");
-        // console.log(cleanText)
-        cleanText = cleanText.match(/^[*#!].*\[\[(.*)\|*.*\]\]/gm).join("\n");
-        cleanText = cleanText
-            .replace(/.*\[\[(.*\/*.*)\|*.*\]\]/gm, "$1")
-            .replace(/\|.*/gm, "");
-        // console.log(cleanText);
-        let wikiArrayCut = cleanText.split("\n");
-        saveContent.numOfDir += wikiArrayCut.length;
-        for (let i = 0; i < wikiArrayCut.length; i++) {
-            saveContent.numOfDir--;
-            if (/^\/.*/.test(wikiArrayCut[i])) {
-                wikiArrayCut[i] = wikiTitle + wikiArrayCut[i];
+        cleanText = cleanText.match(/^[*#!].*\[\[(.*)\|*.*\]\]/gm);
+        if (cleanText) {
+            cleanText = cleanText.join("\n");
+
+            cleanText = cleanText
+                .replace(/.*\[\[(.*\/*.*)\|*.*\]\]/gm, "$1")
+                .replace(/\|.*/gm, "");
+            let wikiArrayCut = cleanText.split("\n");
+            saveContent.numOfDir += wikiArrayCut.length;
+            for (let i = 0; i < wikiArrayCut.length; i++) {
+                saveContent.numOfDir--;
+                if (/^\/.*/.test(wikiArrayCut[i])) {
+                    wikiArrayCut[i] = wikiTitle + wikiArrayCut[i];
+                }
+                if (
+                    app.tempMenuList.indexOf(wikiArrayCut[i]) == -1 &&
+                    !/.*全覽.*/.test(wikiArrayCut[i])
+                ) {
+                    app.tempMenuList.push({
+                        index: i,
+                        value: wikiArrayCut[i],
+                    });
+                    // console.log(
+                    //     `這是第${count}層，祖宗/title是${title},${wikiArrayCut[i]}\n`
+                    // );
+                    getWikisourceJson(wikiArrayCut[i], count + 1, saveContent);
+                }
             }
-            if (
-                app.tempMenuList.indexOf(wikiArrayCut[i]) == -1 &&
-                !/.*全覽.*/.test(wikiArrayCut[i])
-            ) {
-                app.tempMenuList.push({
-                    index: i,
-                    value: wikiArrayCut[i],
-                });
-                // console.log(
-                //     `這是第${count}層，祖宗/title是${title},${wikiArrayCut[i]}\n`
-                // );
-                getWikisourceJson(wikiArrayCut[i], count + 1, saveContent);
+            console.log(`目前的count來到：${saveContent.numOfDir}`);
+            if (saveContent.numOfDir === 0) {
+                tableTreeGenerate(app.tempMenuList);
             }
-        }
-        console.log(`目前的count來到：${saveContent.numOfDir}`);
-        if (saveContent.numOfDir === 0) {
+        } else if (!cleanText && saveContent.numOfDir == 0) {
+            app.tempMenuList.push({
+                index: 0,
+                value: title,
+            });
             tableTreeGenerate(app.tempMenuList);
         }
-        // cleanText.split("\n").forEach(async (ele) => {
-        //     if(/^\/.*/.test(ele)) {
-        //         ele = wikiTitle + ele;
-        //     }
-        //     if(app.menuOfWiki.indexOf(ele)==-1 && !/.*全覽.*/.test(ele)) {
-        //         await app.menuOfWiki.push(ele);
-        //         await console.log(`這是第${count}層，title是${ele}\n`);
-        //         await getWikisourceJson(ele, count+1, saveContent);
-        //     }
-        // })
     } catch (error) {
         // console.log(error);
     }
