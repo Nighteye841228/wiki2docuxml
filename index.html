@@ -34,10 +34,70 @@
     [v-cloak] {
         display: none;
     }
+
     .modal-card-body {
-        min-height: 18em;
+        min-height: 500px;
         overflow: auto;
     }
+
+    .extend-link {
+        max-height: 400px;
+        overflow: auto;
+    }
+
+    .wiki-snippet {
+        display: inherit;
+        max-height: 200px;
+        overflow: auto;
+    }
+
+    .table {
+        min-width: 100%;
+    }
+
+    .vue-treeselect__list-item {
+        padding-left: 10px;
+    }
+
+    .modal-box {
+        display: flex;
+        align-content: space-around;
+        justify-content: space-around;
+        flex-direction: column;
+        flex-wrap: wrap;
+        width: 960px;
+        height: 580px;
+    }
+
+    .modal-box-select-content {
+        width: 55%;
+        height: 95%;
+        overflow: auto;
+        border-right: 2px ridge black;
+        padding-right: 20px;
+    }
+
+    .modal-box-snippet {
+        width: 41%;
+        height: 30%;
+        overflow: auto;
+    }
+
+    .modal-box-extend-link {
+        width: 41%;
+        height: 66%;
+        overflow: auto;
+    }
+
+    hr {
+        background-color: black;
+        border: none;
+        display: flex;
+        height: 2px;
+        margin: 6px 23px 1px -19px;
+        width: 41%;
+    }
+
 </style>
 
 <body>
@@ -52,7 +112,8 @@
                 <a class="navbar-item" target="_blank" href="../../userMain/">
                     我的資料庫
                 </a>
-                <a class="navbar-item" target="_blank" href="https://imgur.com/a/or62eEO">
+                <a class="navbar-item" target="_blank"
+                    href="https://imgur.com/a/or62eEO">
                     教學（暫）
                 </a>
 
@@ -75,9 +136,11 @@
                         @click="confirmAdd(0)"></button>
                 </header>
                 <section class="modal-card-body">
-                    <div v-for="(link,index) in refLinks"><input
-                            type="checkbox" :value="link"
-                            v-model="selectRefLinks">{{ link }}
+                    <div v-for="(link,index) in refLinks">
+                        <label class="checkbox">
+                            <input type="checkbox" :value="link"
+                                v-model="selectRefLinks">{{ link }}
+                        </label>
                     </div>
                 </section>
                 <footer class="modal-card-foot">
@@ -93,31 +156,51 @@
 
         <div class="modal" :class={'is-active':isAddMenuToDownload}>
             <div class="modal-background"></div>
-            <div class="modal-card">
+            <div class="modal-card" style="min-width: 1000px;">
                 <header class="modal-card-head">
                     <p class="modal-card-title">選擇需要的關鍵字</p>
                     <button class="delete" aria-label="close"
                         @click="isAddMenuToDownload = false"></button>
                 </header>
-                <section class="modal-card-body is-medium">
-                    <treeselect
-                        v-model="tempSelectMenu"
-                        :multiple="true"
-                        :options="treeShowMenu"
-                        :sort-value-by="sortValueBy"
-                        :value-consists-of="valueConsistsOf"
-                        :auto-select-descendants="true"
-                        :limit="10"
-                    />
+                <section class="modal-card-body is-large">
+                    <div class="modal-box">
+                        <div class="modal-box-select-content">
+                            <treeselect v-model="tempSelectMenu"
+                                :multiple="true" :options="treeShowMenu"
+                                :sort-value-by="sortValueBy"
+                                :value-consists-of="valueConsistsOf"
+                                :auto-select-descendants="true" :limit="10"
+                                :always-open="true" :default-expand-level="1"
+                                :max-height="530" />
+                        </div>
+                        <div class="modal-box-snippet">
+                            <div class="content">
+                                <h4>簡介</h4>
+                                <p v-text="wikiContentSnippet"></p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="modal-box-extend-link">
+                            <div class="content">
+                                <h4>可參考延伸資料</h4>
+                            </div>
+                            <div v-for="(refLink, index) in refLinks">
+                                <label class="checkbox">
+                                    <input type="checkbox" :value="refLink"
+                                        v-model="selectRefLinks"> {{ refLink }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </section>
-                <hr style="height:10px;margin:0px">
+                <!-- <hr style="height:10px;margin:0px">
                 <section class="modal-card-body">
                     <div class="content">
                         <ul v-for="item in tempSelectMenu">
                             <li>{{item}}</li>
                         </ul>
                     </div>
-                </section>
+                </section> -->
                 <footer class="modal-card-foot">
                     <button class="button is-success"
                         @click="addSelectedMenuItem">Save changes</button>
@@ -200,6 +283,11 @@
         </div> -->
 
 
+
+
+
+
+
         <div class="section" v-if="isInputDataValid">
             <div class="container">
                 <label class="label is-large">搜索關鍵字結果</label>
@@ -213,7 +301,7 @@
                                         <th>文檔標題</th>
                                         <td>簡介</td>
                                         <td>目錄與內容選擇</td>
-                                        <td>可延伸參考文本</td>
+                                        <td>可參考其他書籍</td>
                                     </tr>
                                 </thead>
                                 <tbody
@@ -221,15 +309,21 @@
                                     <tr>
                                         <th>{{ extendedLink }}
                                         </th>
-                                        <td>
-                                            <button class="button" @click="getSnippet">顯示簡介</button>
+                                        <!-- <td>
+                                            <button class="button"
+                                                @click="getSnippet">顯示簡介</button>
                                         </td>
                                         <td>
                                             <button class="button"
                                                 @click="getMenuOfContent(index)">顯示目錄結構</button>
                                         </td>
                                         <td>
-                                            <button class="button" @click="getRefLink(index)">檢視</button>
+                                            <button class="button"
+                                                @click="getRefLink(index)">檢視</button>
+                                        </td> -->
+                                        <td>
+                                            <button class="button"
+                                                @click="getMenuOfContent(index)">我需要這本書</button>
                                         </td>
                                     </tr>
                                 </tbody>

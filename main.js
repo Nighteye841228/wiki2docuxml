@@ -36,6 +36,7 @@ const app = new Vue({
         menuIndexCount: 0,
         refLinks: [],
         selectRefLinks: [],
+        wikiContentSnippet: "",
     },
     methods: {
         cleanUrlField: function () {
@@ -53,14 +54,18 @@ const app = new Vue({
         // },
         getQueryResult: function () {
             if (this.sourceWord == "") return;
-            this.extendedLinks = [];
+            this.refLinks = [];
+            this.selectRefLinks = [];
             this.confirmLinks = [];
+            this.tableOfContents = [];
             searchWord(this.sourceWord);
         },
         getSnippet: async function () {
             getSnippet("水經注");
         },
         getMenuOfContent: async function (index) {
+            this.getRefLink(index);
+            await getSnippet(this.extendedLinks[index]);
             let targetFindExistedMenu = this.tableOfContents.find(
                 (x) => x.index === index
             );
@@ -235,7 +240,6 @@ async function getDeeperLink(pageNames) {
             alert(`請求出錯！`);
         }
     }
-    app.isAddExtendedLinks = true;
 }
 
 async function searchWord(title) {
@@ -259,7 +263,8 @@ async function searchWord(title) {
         outputs = outputs.map((x) =>
             x?.title.replace(/\/.*$/g, "").replace(/[0-9\-]*$/g, "")
         );
-        app.extendedLinks = [...new Set(outputs)];
+        app.refLinks = [...new Set(outputs)];
+        app.isAddExtendedLinks = true;
     } catch (error) {
         console.log(error);
         alert(`請求出錯！`);
@@ -728,19 +733,26 @@ function treeIndexSort(resultTree, path = "", count = 1) {
 async function getSnippet(title) {
     try {
         let apiBackJson = await axios.get(
-            "https://zh.wikisource.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&utf8",
+            "https://zh.wikisource.org/w/api.php",
             {
                 params: {
-                    titles: title,
+                    action: "parse",
+                    page: title,
                     origin: "*",
+                    format: "json",
+                    utf8: "",
                 },
             }
         );
-        apiBackJson = apiBackJson.data;
-        let wikiDocNum = getWikiNum(apiBackJson.query.pages);
-        let dirtyText = apiBackJson.query.pages[wikiDocNum].revisions[0]["*"];
-        let wikiTitle = apiBackJson.query.pages[wikiDocNum].title;
-    } catch (error) {
-        // console.log(error);
-    }
+        apiBackJson = apiBackJson.data.parse.text["*"];
+        let doc = new DOMParser().parseFromString(apiBackJson, "text/html");
+        let snip = $(doc)
+            .find("div#headerContainer.ws-noexport.noprint table tbody tr td")
+            .text();
+        snip = snip
+            .replace(/姊妹計劃.*/g, "")
+            .replace(/版本信息.*/g, "")
+            .replace(/(維基百科條目|维基百科條目).*/g, "");
+        app.wikiContentSnippet = snip;
+    } catch (error) {}
 }
