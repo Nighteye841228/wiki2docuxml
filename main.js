@@ -3,6 +3,16 @@ let dt = new Date();
 let textCount = 1;
 Vue.component("treeselect", VueTreeselect.Treeselect);
 
+Vue.component("button-counter", {
+    data: function () {
+        return {
+            count: 0,
+        };
+    },
+    template:
+        '<button v-on:click="count++">You clicked me {{ count }} times.</button>',
+});
+
 const app = new Vue({
     el: "#app",
     computed: {},
@@ -37,6 +47,7 @@ const app = new Vue({
         refLinks: [],
         selectRefLinks: [],
         wikiContentSnippet: "",
+        isCheckBook: false,
     },
     methods: {
         cleanUrlField: function () {
@@ -87,9 +98,11 @@ const app = new Vue({
         addSelectedMenuItem: function () {
             this.selectedBookMenuPool.push({
                 menu: this.tempSelectMenu,
+                bookName: this.treeShowMenu[0].id,
                 index: this.menuIndexCount,
             });
             this.tempSelectMenu = [];
+            this.confirmAdd(1);
             this.isAddMenuToDownload = false;
         },
         getRefLink: function (index) {
@@ -101,6 +114,14 @@ const app = new Vue({
             this.confirmLinks = [];
             if (!this.checkForm()) return;
             getDeeperLink(this.wikiUrls);
+        },
+        openSelectBookList: function () {
+            this.selectedBookMenuPool.sort((x, y) => x.index - y.index);
+            this.isCheckBook = true;
+        },
+        deleteChapter: function (count, ind) {
+            let x = this.selectedBookMenuPool[count].menu[ind];
+            this.selectedBookMenuPool[count].menu.splice(ind, 1);
         },
         checkForm: function (e) {
             if (!this.wikiUrls) {
