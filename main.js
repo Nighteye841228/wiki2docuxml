@@ -3,14 +3,14 @@ let dt = new Date();
 let textCount = 1;
 Vue.component("treeselect", VueTreeselect.Treeselect);
 
-Vue.component("button-counter", {
-    data: function () {
-        return {
-            count: 0,
-        };
-    },
-    template:
-        '<button v-on:click="count++">You clicked me {{ count }} times.</button>',
+Vue.component("test-child", {
+    props: ["value", "wikiBook"],
+    template: `<!--<div class="columns is-multiline">
+                    <div v-for="box in 16" class="column is-one-quarter">
+                        <b-button>{{ wikiBook }}</b-button>
+                    </div>
+                </div>-->
+                <div class="content"><b-button type="is-primary" outlined expanded>{{ wikiBook }}</b-button></div>`,
 });
 
 const app = new Vue({
@@ -48,6 +48,8 @@ const app = new Vue({
         selectRefLinks: [],
         wikiContentSnippet: "",
         isCheckBook: false,
+        kidsWord: "",
+        testModal: true,
     },
     methods: {
         cleanUrlField: function () {
@@ -138,6 +140,7 @@ const app = new Vue({
                 this.extendedLinks = this.extendedLinks.concat(
                     this.selectRefLinks
                 );
+            this.selectRefLinks = [];
             this.isAddExtendedLinks = false;
         },
         checkContentValue: function (obj) {
