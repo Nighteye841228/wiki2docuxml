@@ -4,14 +4,151 @@ let textCount = 1;
 Vue.component("treeselect", VueTreeselect.Treeselect);
 
 Vue.component("test-child", {
+    data: function () {
+        return {
+            isOpenBook: false,
+            isParagraphCut: false,
+            wikiObj: {},
+            wikiText: {
+                paragraphs: "",
+                hyperlinks: "",
+            },
+            isUrlAllow: false,
+        };
+    },
+    methods: {
+        sendWikiCutObj: function () {
+            this.$emit("handle-wiki", {
+                isParagraphCut: this.isParagraphCut,
+                isUrlAllow: this.isUrlAllow,
+                wikiText: this.wikiText,
+            });
+            this.isOpenBook = false;
+        },
+    },
+    computed: {
+        pureText: {
+            get: function () {
+                return this.wikiText.hyperlinks.replace(
+                    /<Udef_wiki[^<]*>([^<]*)<\/Udef_wiki>/gm,
+                    "$1"
+                );
+            },
+            set: function (val) {
+                this.wikiText.hyperlinks = splitAriaConvert(
+                    val,
+                    this.wikiText.hyperlinks
+                );
+            },
+        },
+    },
+    created: async function () {
+        console.log("進入偵測！");
+        this.wikiObj = await getWikiPage(this.wikiBook);
+        this.wikiText = parseHtmlText(this.wikiObj.text["*"]);
+    },
     props: ["value", "wikiBook"],
     template: `<!--<div class="columns is-multiline">
                     <div v-for="box in 16" class="column is-one-quarter">
                         <b-button>{{ wikiBook }}</b-button>
                     </div>
                 </div>-->
-                <div class="content"><b-button type="is-primary" outlined expanded>{{ wikiBook }}</b-button></div>`,
+                <div>
+                    <div class="content">
+                        <b-button class="is-primary" outlined expanded @click="isOpenBook = true">{{ wikiBook }}
+                        </b-button>
+                    </div>
+                    <b-modal v-model="isOpenBook" :width="1000" scroll="keep">
+                        <div class="card">
+                            <div class="card-content">
+                                <div class="media">
+                                    <div class="media-content">
+                                        <p class="title is-4">獲取的WikiSource文本內容</p>
+                                    </div>
+                                </div>
+
+                                <textarea class="textarea" v-if="!isUrlAllow"
+                                    placeholder="10 lines of textarea" v-model.lazy="pureText"
+                                    rows="20"></textarea>
+                                <textarea class="textarea" v-if="isUrlAllow"
+                                    placeholder="10 lines of textarea" v-model="wikiText.hyperlinks"
+                                    rows="20"></textarea>
+                            </div>
+                            <footer class="modal-card-foot">
+                                <section>
+                                <label class="checkbox">
+                                    <input type="checkbox" v-model="isUrlAllow">
+                                    是否保存超連結
+                                </label>
+                                
+                                <label class="checkbox">
+                                    <input type="checkbox" v-model="isParagraphCut">
+                                    以段落作為分件方式
+                                </label>
+                                
+                                <b-button type="is-success" outlined @click="sendWikiCutObj">確認分段</b-button>
+                                </section>
+                            </footer>
+                        </div>
+                    </b-modal>
+                </div>`,
 });
+
+Vue.component("split-complete-content", {
+    data: function () {
+        return {
+            isOpenBook: false,
+        };
+    },
+    methods: {},
+    computed: {},
+    created: async function () {},
+    props: ["document", "index"],
+    template: `<div>
+                    <div class="content">
+                        <b-button class="is-primary" outlined expanded @click="isOpenBook = true">第{{ index }}卷
+                        </b-button>
+                    </div>
+                    <b-modal v-model="isOpenBook" :width="1000" scroll="keep">
+                        <div class="card">
+                            <div class="card-content">
+                                <div class="media">
+                                    <div class="media-content">
+                                        <p class="title is-4">第{{index}}卷</p>
+                                    </div>
+                                </div>
+
+                                <textarea class="textarea" 
+                                    v-text="document"
+                                    rows="20"></textarea>
+                            </div>
+                            <footer class="modal-card-foot">
+                                <!--<section>
+                                
+                                <b-button type="is-success" outlined @click="sendWikiCutObj">確認分段</b-button>
+                                </section>-->
+                            </footer>
+                        </div>
+                    </b-modal>
+                </div>`,
+});
+
+function splitAriaConvert(pureTextWithCutVal, urlVal) {
+    let splitStrings = urlVal.match(
+        /.{2}<Udef_wiki[^<]*>[^<]*<\/Udef_wiki>.{2}/g
+    );
+    if (splitStrings === null) return;
+
+    let waitToAddUrlText = pureTextWithCutVal;
+    splitStrings.forEach((url) => {
+        let cleanUrlText = url.replace(
+            /(.{2})<Udef_wiki[^<]*>([^<]*)<\/Udef_wiki>(.{2})/,
+            "$1$2$3"
+        );
+        waitToAddUrlText = waitToAddUrlText.replace(cleanUrlText, url);
+    });
+    return waitToAddUrlText;
+}
 
 const app = new Vue({
     el: "#app",
@@ -50,6 +187,9 @@ const app = new Vue({
         isCheckBook: false,
         kidsWord: "",
         testModal: true,
+        isImageModalActive: false,
+        wikiContentWaitCut: [],
+        splitCompleteWikiContents: [],
     },
     methods: {
         cleanUrlField: function () {
@@ -90,9 +230,11 @@ const app = new Vue({
                 await getWikisourceJson(this.extendedLinks[index], 0);
                 this.tableOfContents.push({
                     index: index,
+                    searchName: this.extendedLinks[index],
                     menu: this.tempMenuList,
                 });
                 this.treeShowMenu = this.tempMenuList;
+                this.isAddMenuToDownload = true;
             }
             this.tempMenuList = [];
             this.tempSelectMenu = [];
@@ -124,6 +266,14 @@ const app = new Vue({
         deleteChapter: function (count, ind) {
             let x = this.selectedBookMenuPool[count].menu[ind];
             this.selectedBookMenuPool[count].menu.splice(ind, 1);
+        },
+        handleWikiCutObj: function (param) {
+            this.wikiContentWaitCut.push(param);
+        },
+        splitWikiContents: function () {
+            this.splitCompleteWikiContents = splitAndUrlHandler(
+                this.wikiContentWaitCut
+            );
         },
         checkForm: function (e) {
             if (!this.wikiUrls) {
@@ -416,7 +566,17 @@ function parseHtmlText(htmlContent, title) {
             });
         }
     });
-    return wikiContentSeperateParagraph;
+    let pureText = wikiContentSeperateParagraph
+        .map((element) => {
+            return element.paragraphs;
+        })
+        .join("\n");
+    let urlLinkText = wikiContentSeperateParagraph
+        .map((element) => {
+            return element.hyperlinks;
+        })
+        .join("\n");
+    return { paragraphs: pureText, hyperlinks: urlLinkText };
 }
 
 function parseAuthor(htmlContent) {
@@ -615,7 +775,7 @@ function isEssensialKey(text) {
 function composeXmlString(source, xmlAttribute, isBreak = 0, addValue = "") {
     return isBreak == 0
         ? `<${xmlAttribute}${addValue}>${source}</${xmlAttribute}>\n`
-        : `\n<${xmlAttribute}${addValue}>\n${source}\n</${xmlAttribute}>\n`;
+        : `<${xmlAttribute}${addValue}>${source}</${xmlAttribute}>`;
 }
 
 async function getWikisourceJson(title, count, saveContent = {}) {
@@ -724,9 +884,7 @@ function tableTreeGenerate(wikis) {
         }, result);
     });
     treeIndexSort(result);
-    console.log(result);
     app.tempMenuList = result;
-    app.isAddMenuToDownload = true;
 }
 
 function treeIndexSort(resultTree, path = "", count = 1) {
@@ -779,4 +937,45 @@ async function getSnippet(title) {
             .replace(/(維基百科條目|维基百科條目).*/g, "");
         app.wikiContentSnippet = snip;
     } catch (error) {}
+}
+
+(async () => {
+    await getWikiPage(`三國演義/第001回`);
+})();
+
+async function getWikiPage(title) {
+    try {
+        let apiBackJson = await axios.get(
+            "https://zh.wikisource.org/w/api.php",
+            {
+                params: {
+                    action: "parse",
+                    page: title,
+                    origin: "*",
+                    format: "json",
+                    utf8: "",
+                },
+            }
+        );
+        console.log(apiBackJson.data.parse);
+        return apiBackJson.data.parse;
+    } catch (error) {
+        console.log(error);
+        alert(`請求出錯！`);
+    }
+}
+
+function splitAndUrlHandler(unCutContents) {
+    let splitParagraphs = [];
+    unCutContents.forEach((content) => {
+        let useContent =
+            content.isUrlAllow === true
+                ? content.wikiText.hyperlinks
+                : content.wikiText.paragraphs;
+        let re = content.isParagraphCut === true ? /####|\n/ : /####/;
+        let cutParas = useContent.split(re);
+        console.log("print: ", cutParas);
+        splitParagraphs = splitParagraphs.concat(cutParas);
+    });
+    return splitParagraphs;
 }

@@ -9,7 +9,7 @@
     <title>Wiki2DocuXML</title>
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.8.0/css/bulma.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue"></script>
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.1/axios.min.js">
     </script>
@@ -24,11 +24,13 @@
     </script>
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.min.css" />
-    <script src="https://unpkg.com/buefy/dist/components/table"></script>
-    <script src="https://unpkg.com/buefy/dist/components/input"></script>
     <link rel="stylesheet" href="https://unpkg.com/buefy/dist/buefy.min.css" />
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bulma-extensions@6.2.7/bulma-divider/dist/css/bulma-divider.min.css" />
+    <link rel="stylesheet"
+        href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
+        integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
+        crossorigin="anonymous" />
 
 </head>
 
@@ -127,35 +129,30 @@
             </div>
         </nav>
 
-
-        <div class="modal" :class={'is-active':isAddExtendedLinks}>
-            <div class="modal-background"></div>
-            <div class="modal-card">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">選擇需要的關鍵字</p>
-                    <button class="delete" aria-label="close"
-                        @click="confirmAdd(0)"></button>
-                </header>
-                <section class="modal-card-body">
-                    <div v-for="(link,index) in refLinks">
-                        <label class="checkbox">
-                            <input type="checkbox" :value="link"
-                                v-model="selectRefLinks">{{ link }}
-                        </label>
-                    </div>
-                </section>
-                <footer class="modal-card-foot">
-                    <button class="button is-success"
-                        @click="confirmAdd(1)">Save changes</button>
-                    <button class="button"
-                        @click="confirmAdd(0)">Cancel</button>
-                    <!-- <button type="button" class="button"
+        <b-modal v-model="isAddExtendedLinks" :width="1000" scroll="keep">
+            <header class="modal-card-head">
+                <p class="modal-card-title">選擇需要的關鍵字</p>
+                <button class="delete" aria-label="close"
+                    @click="confirmAdd(0)"></button>
+            </header>
+            <section class="modal-card-body">
+                <div v-for="(link,index) in refLinks">
+                    <label class="checkbox">
+                        <input type="checkbox" :value="link"
+                            v-model="selectRefLinks">{{ link }}
+                    </label>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" @click="confirmAdd(1)">Save
+                    changes</button>
+                <button class="button" @click="confirmAdd(0)">Cancel</button>
+                <!-- <button type="button" class="button"
                         @click="selectAllExtendLinks">全選</button> -->
-                </footer>
-            </div>
-        </div>
+            </footer>
+        </b-modal>
 
-        <div class="modal" :class={'is-active':isCheckBook}>
+        <b-modal v-model="isCheckBook" :width="1000" scroll="keep">
             <div class="modal-background"></div>
             <div class="modal-card">
                 <header class="modal-card-head">
@@ -180,7 +177,7 @@
                         @click="isCheckBook = false">返回</button>
                 </footer>
             </div>
-        </div>
+        </b-modal>
 
         <div class="modal" :class={'is-active':isAddMenuToDownload}>
             <div class="modal-background"></div>
@@ -265,10 +262,10 @@
 
         <div class="section" v-if="isInputDataValid">
             <div class="container">
-                <label class="label is-large">搜索關鍵字結果｜<button class="button"
-                        @click="openSelectBookList">
+                <label class="label is-large">搜索關鍵字結果｜<b-button class="is-primary"
+                        @click="openSelectBookList" outlined>
                         察看目前已選章節
-                    </button></label>
+                    </b-button></label>
                 <div class="is-divider"></div>
                 <div class="field">
                     <div class="control">
@@ -304,19 +301,83 @@
                     v-for="(book, index) in selectedBookMenuPool" :key="index">
                     <div class="column is-one-quarter"
                         v-for="(chap, chapCount) in book.menu" :key="chapCount">
-                        <test-child :wiki-book="chap"></test-child>
+                        <test-child @handle-wiki="handleWikiCutObj"
+                            :wiki-book.sync="chap"></test-child>
                     </div>
                 </div>
+                <div class="is-divider"></div>
+                <b-tooltip label="下一步編輯Metadata與Tag！" position="is-bottom"
+                    :animated="false" size="is-small">
+                    <b-button class="is-primary" @click="splitWikiContents" outlined>確認輸出</b-button>
+                </b-tooltip>
+
             </div>
         </div>
+        <div class="section">
+            <div class="container">
+                <label class="label is-large">分段完成編輯metadata區域</label>
+                <div class="is-divider"></div>
+                <div class="columns is-multiline"
+                    v-for="(book, index) in splitCompleteWikiContents" :key="index">
+                    <split-complete-content :document="book" :index="index"></split-complete-content>
+                </div>
+                <b-tooltip label="" position="is-bottom"
+                    :animated="false" size="is-small">
+                    <b-button class="is-primary" outlined>輸出完成資料！</b-button>
+                </b-tooltip>
+
+            </div>
+        </div>
+
+        <section>
+            <div class="buttons">
+                <b-button label="Launch image modal" type="is-primary"
+                    size="is-medium" @click="isImageModalActive = true" />
+            </div>
+
+            <b-modal v-model="isImageModalActive" :width="1000" scroll="keep">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="media">
+                            <div class="media-content">
+                                <p class="title is-4">獲取的WikiSource文本內容</p>
+                            </div>
+                        </div>
+
+                        <textarea class="textarea"
+                            placeholder="10 lines of textarea"
+                            rows="10"></textarea>
+                    </div>
+                </div>
+
+                <footer class="modal-card-foot">
+                    <section>
+                        <b-button type="is-success is-small" outlined>確認分段
+                        </b-button>
+                        <label class="checkbox">
+                            <input type="checkbox">
+                            是否保存超連結
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox">
+                            以段落作為分件方式
+                        </label>
+                    </section>
+
+                </footer>
+            </b-modal>
+
+
+        </section>
+
+
     </div>
 
 
 
-    <script src="main.js"></script>
-</body>
 
-<script src="./main.js"></script>
+</body>
+<script src="main.js"></script>
 <script src="./jqueryRegexPlugin.js"></script>
 
 </html>
