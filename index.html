@@ -1,383 +1,140 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Wiki2DocuXML</title>
+        <link
+            rel="icon"
+            href="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/W_in_a_circle.svg/156px-W_in_a_circle.svg.png"
+        />
+        <script src="https://unpkg.com/vue@2.6.12/dist/vue.js"></script>
+        <!-- Full bundle -->
+        <script src="https://unpkg.com/buefy/dist/buefy.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.umd.min.js"></script>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.min.css"
+        />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://unpkg.com/buefy/dist/components/table"></script>
+        <script src="https://unpkg.com/buefy/dist/components/input"></script>
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/buefy/dist/buefy.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="node_modules/@riophae/vue-treeselect/dist/vue-treeselect.min.css"
+        />
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <link rel="shortcut icon" href="taiwan.ico" type="image/x-icon" />
-    <title>Wiki2DocuXML</title>
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.8.0/css/bulma.min.css" />
-    <script src="https://unpkg.com/vue"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.1/axios.min.js">
-    </script>
-    <script src="https://code.jquery.com/jquery-3.5.0.min.js"
-        crossorigin="anonymous"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/vue-clipboard2/0.3.1/vue-clipboard.min.js">
-    </script>
-    <script src="https://unpkg.com/buefy/dist/buefy.min.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.umd.min.js">
-    </script>
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/@riophae/vue-treeselect@^0.4.0/dist/vue-treeselect.min.css" />
-    <link rel="stylesheet" href="https://unpkg.com/buefy/dist/buefy.min.css" />
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bulma-extensions@6.2.7/bulma-divider/dist/css/bulma-divider.min.css" />
-    <link rel="stylesheet"
-        href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
-        integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
-        crossorigin="anonymous" />
-
-</head>
-
-<style>
-    [v-cloak] {
-        display: none;
-    }
-
-    .modal-card-body {
-        min-height: 500px;
-        overflow: auto;
-    }
-
-    .extend-link {
-        max-height: 400px;
-        overflow: auto;
-    }
-
-    .wiki-snippet {
-        display: inherit;
-        max-height: 200px;
-        overflow: auto;
-    }
-
-    .table {
-        min-width: 100%;
-    }
-
-    .vue-treeselect__list-item {
-        padding-left: 10px;
-    }
-
-    .modal-box {
-        display: flex;
-        align-content: space-around;
-        justify-content: space-around;
-        flex-direction: column;
-        flex-wrap: wrap;
-        width: 960px;
-        height: 580px;
-    }
-
-    .modal-box-select-content {
-        width: 55%;
-        height: 95%;
-        overflow: auto;
-        border-right: 2px ridge black;
-        padding-right: 20px;
-    }
-
-    .modal-box-snippet {
-        width: 41%;
-        height: 30%;
-        overflow: auto;
-    }
-
-    .modal-box-extend-link {
-        width: 41%;
-        height: 66%;
-        overflow: auto;
-    }
-
-    hr {
-        background-color: black;
-        border: none;
-        display: flex;
-        height: 2px;
-        margin: 6px 23px 1px -19px;
-        width: 41%;
-    }
-</style>
-
-<body>
-    <div id="app">
-
-        <nav class="navbar" role="navigation" aria-label="main navigation">
-            <div class="navbar-end">
-                <a class="navbar-item" target="_blank"
-                    href="../../../index2_20181204.html">
-                    首頁
-                </a>
-                <a class="navbar-item" target="_blank" href="../../userMain/">
-                    我的資料庫
-                </a>
-                <a class="navbar-item" target="_blank"
-                    href="https://imgur.com/a/or62eEO">
-                    教學（暫）
-                </a>
-
-                <a role="button" class="navbar-burger" aria-label="menu"
-                    aria-expanded="false">
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                    <span aria-hidden="true"></span>
-                </a>
-            </div>
-        </nav>
-
-        <b-modal v-model="isAddExtendedLinks" :width="1000" scroll="keep">
-            <header class="modal-card-head">
-                <p class="modal-card-title">選擇需要的關鍵字</p>
-                <button class="delete" aria-label="close"
-                    @click="confirmAdd(0)"></button>
-            </header>
-            <section class="modal-card-body">
-                <div v-for="(link,index) in refLinks">
-                    <label class="checkbox">
-                        <input type="checkbox" :value="link"
-                            v-model="selectRefLinks">{{ link }}
-                    </label>
+        <style>
+            .sidebar-content {
+                width: 400px !important;
+            }
+            /* #aside {
+                background-color: white;
+                color: black;
+                height: 700px;
+                overflow: auto;
+            } */
+            .selectTagBox {
+                position: absolute;
+                max-width: 500px;
+                max-height: 400px;
+                z-index: 1000;
+                border: #cfe65b 2px solid;
+                background-color: white;
+                padding: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            
+            <div class="selectTagBox" ref="selbox" v-if="isTagOpen">
+                <div v-for="(tag, index) in splitWikiTags">
+                    <b-radio type="radio" v-model="selectTag" :native-value="tag">{{ tag }}</b-radio>
                 </div>
-            </section>
-            <footer class="modal-card-foot">
-                <button class="button is-success" @click="confirmAdd(1)">Save
-                    changes</button>
-                <button class="button" @click="confirmAdd(0)">Cancel</button>
-                <!-- <button type="button" class="button"
-                        @click="selectAllExtendLinks">全選</button> -->
-            </footer>
-        </b-modal>
-
-        <b-modal v-model="isCheckBook" :width="1000" scroll="keep">
-            <div class="modal-background"></div>
-            <div class="modal-card">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">目前已選書籍</p>
-                    <button class="delete" aria-label="close"
-                        @click="isCheckBook = false"></button>
-                </header>
-                <section class="modal-card-body">
-                    <div class="content">
-                        <ul v-for="(book,count) in selectedBookMenuPool">
-                            <li>第{{ count+1 }}本</li>
-                            <ul v-for="(chap,ind) in book.menu">
-                                <li><a href="#"
-                                        @click="deleteChapter(count, ind)">{{ chap }}</a>
-                                </li>
-                            </ul>
-                        </ul>
-                    </div>
-                </section>
-                <footer class="modal-card-foot">
-                    <button class="button is-success"
-                        @click="isCheckBook = false">返回</button>
-                </footer>
+                <b-button type="is-small" @click="setTag">確認</b-button>
+                <b-button type="is-small" @click="isTagOpen = false">取消</b-button>
             </div>
-        </b-modal>
 
-        <div class="modal" :class={'is-active':isAddMenuToDownload}>
-            <div class="modal-background"></div>
-            <div class="modal-card" style="min-width: 1000px;">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">選擇需要的關鍵字</p>
-                    <button class="delete" aria-label="close"
-                        @click="isAddMenuToDownload = false"></button>
-                </header>
-                <section class="modal-card-body is-large">
-                    <div class="modal-box">
-                        <div class="modal-box-select-content">
-                            <treeselect v-model="tempSelectMenu"
-                                :multiple="true" :options="treeShowMenu"
-                                :sort-value-by="sortValueBy"
-                                :value-consists-of="valueConsistsOf"
-                                :auto-select-descendants="true" :limit="10"
-                                :always-open="true" :default-expand-level="1"
-                                :max-height="530" />
-                        </div>
-                        <div class="modal-box-snippet">
-                            <div class="content">
-                                <h4>簡介</h4>
-                                <p v-text="wikiContentSnippet"></p>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="modal-box-extend-link">
-                            <div class="content">
-                                <h4>可參考延伸資料</h4>
-                            </div>
-                            <div v-for="(refLink, index) in refLinks">
-                                <label class="checkbox">
-                                    <input type="checkbox" :value="refLink"
-                                        v-model="selectRefLinks"> {{ refLink }}
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+            <!-- <input
+                class="input"
+                type="text"
+                placeholder="輸入關鍵字"
+                v-model="keyword"
+                @keypress.enter="getTableOfContents"
+            />
+            <button class="button" @click="getTableOfContents">Search</button> -->
+            <!-- <div class="content">
+                <ul>
+                    <li v-for="(item, key) in menuOfWiki">
+                        {{item.index}} : {{item.value}}
+                    </li>
+                </ul>
+            </div> -->
 
-                <footer class="modal-card-foot">
-                    <button class="button is-success"
-                        @click="addSelectedMenuItem">Save changes</button>
-                    <button class="button"
-                        @click="isAddMenuToDownload = false">Cancel</button>
-                </footer>
+            <!-- <div class="content">
+                <menu-list :tree-data="menuOfWiki"></menu-list>
             </div>
+            <div class="content">
+                <ul v-for="item in filterResult">
+                    <li>{{item}}</li>
+                </ul>
+            </div> -->
+            <!-- <div>
+                <treeselect
+                    v-model="contentNeededList"
+                    :multiple="true"
+                    :options="menuOfWiki"
+                    :sort-value-by="sortValueBy"
+                    :value-consists-of="valueConsistsOf"
+                    :auto-select-descendants="true"
+                    :limit="10"
+                />
+                <treeselect
+                    v-model="treeShowMenu"
+                    :multiple="true"
+                    :options="treeShowMenu"
+                    :sort-value-by="sortValueBy"
+                    :value-consists-of="valueConsistsOf"
+                    :auto-select-descendants="true"
+                    :limit="10"
+                />
+            </div> -->
+            
+
+            <!-- <div class="content">
+                <b-field label="測試內容">
+                    <b-input type="textarea" v-model="testInputCut"></b-input>
+                </b-field>
+                <b-button @click="cutText">Click</b-button>
+                <ul>
+                    <li v-for="(item) in testOutput">{{item}}</li>
+                </ul>
+                <div v-html="searchResult" v-model="getCleanText"></div>
+            </div> -->
+            <div class="content">
+                <b-input placeholder="輸入需要的標籤（以逗號分隔）" v-model="wikiTags"></b-input>
+            </div>
+            <div>
+                <div style="white-space:pre-wrap;" v-html="test" @mouseup="print"></div>
+            </div>
+            <br/><br/><br/>
+            <div class="content">
+                <h4>目前所選擇的tag為: {{ selectTag }}</h4>
+            </div>
+            
         </div>
-
-        <section class="hero is-info">
-            <div class="hero-body">
-                <div class="container">
-                    <h1 class="title">
-                        Wiki2DocuXML
-                    </h1>
-                    <h2 class="subtitle">
-                        DocuSky-維基文庫轉DocuXML
-                    </h2>
-                </div>
-            </div>
-        </section>
-
-        <div class="section">
-            <div class="container">
-                <label class="label is-large" title="不需完整標題">文本關鍵字搜索
-                </label>
-                <div class="field has-addons">
-                    <div class="control">
-                        <input v-model="sourceWord" class="input" type="text"
-                            placeholder="鄭氏紀事" @keypress.enter="getQueryResult">
-                    </div>
-                    <div class="control">
-                        <a class="button is-link" @click="getQueryResult">
-                            搜尋
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="section" v-if="isInputDataValid">
-            <div class="container">
-                <label class="label is-large">搜索關鍵字結果｜<b-button class="is-primary"
-                        @click="openSelectBookList" outlined>
-                        察看目前已選章節
-                    </b-button></label>
-                <div class="is-divider"></div>
-                <div class="field">
-                    <div class="control">
-
-                        <div class="columns is-multiline">
-                            <div class="column is-half"
-                                v-for="(extendedLink, index) in extendedLinks">
-                                <div class="columns"
-                                    style="box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);">
-                                    <div class="column">
-                                        <div class="content"
-                                            style="padding-top: 15px;padding-left: 10px;">
-                                            <h4>{{ extendedLink }}</h4>
-                                        </div>
-                                    </div>
-                                    <div class="column" style="margin-top: 7px">
-                                        <b-button type="is-primary" outlined
-                                            @click="getMenuOfContent(index)">
-                                            我需要這本書</b-button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="section">
-            <div class="container">
-                <label class="label is-large">目前已下載卷數檢視</label>
-                <div class="is-divider"></div>
-                <div class="columns is-multiline"
-                    v-for="(book, index) in selectedBookMenuPool" :key="index">
-                    <div class="column is-one-quarter"
-                        v-for="(chap, chapCount) in book.menu" :key="chapCount">
-                        <test-child @handle-wiki="handleWikiCutObj"
-                            :wiki-book.sync="chap"></test-child>
-                    </div>
-                </div>
-                <div class="is-divider"></div>
-                <b-tooltip label="下一步編輯Metadata與Tag！" position="is-bottom"
-                    :animated="false" size="is-small">
-                    <b-button class="is-primary" @click="splitWikiContents" outlined>確認輸出</b-button>
-                </b-tooltip>
-
-            </div>
-        </div>
-        <div class="section">
-            <div class="container">
-                <label class="label is-large">分段完成編輯metadata區域</label>
-                <div class="is-divider"></div>
-                <div class="columns is-multiline"
-                    v-for="(book, index) in splitCompleteWikiContents" :key="index">
-                    <split-complete-content :document="book" :index="index"></split-complete-content>
-                </div>
-                <b-tooltip label="" position="is-bottom"
-                    :animated="false" size="is-small">
-                    <b-button class="is-primary" outlined>輸出完成資料！</b-button>
-                </b-tooltip>
-
-            </div>
-        </div>
-
-        <section>
-            <div class="buttons">
-                <b-button label="Launch image modal" type="is-primary"
-                    size="is-medium" @click="isImageModalActive = true" />
-            </div>
-
-            <b-modal v-model="isImageModalActive" :width="1000" scroll="keep">
-                <div class="card">
-                    <div class="card-content">
-                        <div class="media">
-                            <div class="media-content">
-                                <p class="title is-4">獲取的WikiSource文本內容</p>
-                            </div>
-                        </div>
-
-                        <textarea class="textarea"
-                            placeholder="10 lines of textarea"
-                            rows="10"></textarea>
-                    </div>
-                </div>
-
-                <footer class="modal-card-foot">
-                    <section>
-                        <b-button type="is-success is-small" outlined>確認分段
-                        </b-button>
-                        <label class="checkbox">
-                            <input type="checkbox">
-                            是否保存超連結
-                        </label>
-                        <label class="checkbox">
-                            <input type="checkbox">
-                            以段落作為分件方式
-                        </label>
-                    </section>
-
-                </footer>
-            </b-modal>
-
-
-        </section>
-
-
-    </div>
-
-
-
-
-</body>
-<script src="main.js"></script>
-<script src="./jqueryRegexPlugin.js"></script>
-
+    </body>
+    <script type="text/javascript" src="./main.js"></script>
 </html>
