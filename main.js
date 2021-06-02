@@ -1,782 +1,165 @@
-$(document).ready();
-let dt = new Date();
-let textCount = 1;
-Vue.component("treeselect", VueTreeselect.Treeselect);
-
-Vue.component("test-child", {
-    data: function () {
+Vue.component("menu-list", {
+    template: `<div id="menu-list" class="content"> 
+    <div v-for="newTree in treeData">
+    <item :tree="newTree"></item>
+  </div></div>`,
+    data() {
         return {
-            isOpenBook: false,
-            isParagraphCut: false,
-            wikiObj: {},
-            wikiText: {
-                paragraphs: "",
-                hyperlinks: "",
-            },
-            isUrlAllow: false,
+            targetSearch: [],
+        };
+    },
+    props: ["tree-data"],
+});
+
+Vue.component("item", {
+    template: `
+    <div style="margin-left: 2em">
+      <input type="checkbox" :value="tree.id">
+      <a href="#" @click.stop="toggle">{{tree.id}}</a>
+      <div v-show="open" v-if="tree.children && tree.children.length > 0">
+        <item v-for="(children, index) in tree.children" :tree="children" :key="index" >
+        </item>
+      </div>
+    </div>
+  `,
+    props: ["tree"],
+    data() {
+        return {
+            open: false,
         };
     },
     methods: {
-        sendWikiCutObj: function () {
-            this.$emit("handle-wiki", {
-                isParagraphCut: this.isParagraphCut,
-                isUrlAllow: this.isUrlAllow,
-                wikiText: this.wikiText,
-            });
-            this.isOpenBook = false;
+        toggle() {
+            if (this.tree.children && this.tree.children.length > 0) {
+                this.open = !this.open;
+            }
         },
     },
-    computed: {
-        pureText: {
-            get: function () {
-                return this.wikiText.hyperlinks.replace(
-                    /<Udef_wiki[^<]*>([^<]*)<\/Udef_wiki>/gm,
-                    "$1"
-                );
-            },
-            set: function (val) {
-                this.wikiText.hyperlinks = splitAriaConvert(
-                    val,
-                    this.wikiText.hyperlinks
-                );
-            },
-        },
-    },
-    created: async function () {
-        console.log("進入偵測！");
-        this.wikiObj = await getWikiPage(this.wikiBook);
-        this.wikiText = parseHtmlText(this.wikiObj.text["*"]);
-    },
-    props: ["value", "wikiBook"],
-    template: `<!--<div class="columns is-multiline">
-                    <div v-for="box in 16" class="column is-one-quarter">
-                        <b-button>{{ wikiBook }}</b-button>
-                    </div>
-                </div>-->
-                <div>
-                    <div class="content">
-                        <b-button class="is-primary" outlined expanded @click="isOpenBook = true">{{ wikiBook }}
-                        </b-button>
-                    </div>
-                    <b-modal v-model="isOpenBook" :width="1000" scroll="keep">
-                        <div class="card">
-                            <div class="card-content">
-                                <div class="media">
-                                    <div class="media-content">
-                                        <p class="title is-4">獲取的WikiSource文本內容</p>
-                                    </div>
-                                </div>
-
-                                <textarea class="textarea" v-if="!isUrlAllow"
-                                    placeholder="10 lines of textarea" v-model.lazy="pureText"
-                                    rows="20"></textarea>
-                                <textarea class="textarea" v-if="isUrlAllow"
-                                    placeholder="10 lines of textarea" v-model="wikiText.hyperlinks"
-                                    rows="20"></textarea>
-                            </div>
-                            <footer class="modal-card-foot">
-                                <section>
-                                <label class="checkbox">
-                                    <input type="checkbox" v-model="isUrlAllow">
-                                    是否保存超連結
-                                </label>
-                                
-                                <label class="checkbox">
-                                    <input type="checkbox" v-model="isParagraphCut">
-                                    以段落作為分件方式
-                                </label>
-                                
-                                <b-button type="is-success" outlined @click="sendWikiCutObj">確認分段</b-button>
-                                </section>
-                            </footer>
-                        </div>
-                    </b-modal>
-                </div>`,
 });
 
-Vue.component("split-complete-content", {
-    data: function () {
+Vue.component("highlight-tag", {
+    template: `
+    <div class="content">
+        <input v-model="isCheckHl" type="checkbox" name="" id="" />
+        <label for="checkbox">是否高光</label>
+        <p>
+            這一天的天氣很好我們應該<span
+                :style="{ 'color': isCheckHl ? 'white' : 'inherit', 'background-color': isCheckHl ? 'green' : 'white' }"
+                >取走走</span
+            >到處看看花草植物
+        </p>
+    </div>
+  `,
+    props: ["tree"],
+    data() {
         return {
-            isOpenBook: false,
+            isCheckHl: false,
         };
     },
     methods: {},
-    computed: {},
-    created: async function () {},
-    props: ["document", "index"],
-    template: `<div>
-                    <div class="content">
-                        <b-button class="is-primary" outlined expanded @click="isOpenBook = true">第{{ index }}卷
-                        </b-button>
-                    </div>
-                    <b-modal v-model="isOpenBook" :width="1000" scroll="keep">
-                        <div class="card">
-                            <div class="card-content">
-                                <div class="media">
-                                    <div class="media-content">
-                                        <p class="title is-4">第{{index}}卷</p>
-                                    </div>
-                                </div>
-
-                                <textarea class="textarea" 
-                                    v-text="document"
-                                    rows="20"></textarea>
-                            </div>
-                            <footer class="modal-card-foot">
-                                <!--<section>
-                                
-                                <b-button type="is-success" outlined @click="sendWikiCutObj">確認分段</b-button>
-                                </section>-->
-                            </footer>
-                        </div>
-                    </b-modal>
-                </div>`,
 });
 
-function splitAriaConvert(pureTextWithCutVal, urlVal) {
-    let splitStrings = urlVal.match(
-        /.{2}<Udef_wiki[^<]*>[^<]*<\/Udef_wiki>.{2}/g
-    );
-    if (splitStrings === null) return;
+Vue.component("search-book", {
+    template: `
+    <div class="content">
+        <input v-model="isCheckHl" type="checkbox" name="" id="" />
+        <label for="checkbox">是否高光</label>
+        <p>
+            這一天的天氣很好我們應該<span
+                :style="{ 'color': isCheckHl ? 'white' : 'inherit', 'background-color': isCheckHl ? 'green' : 'white' }"
+                >取走走</span
+            >到處看看花草植物
+        </p>
+    </div>
+  `,
+    props: ["isGetResult"],
+    data() {
+        return {
+            isCheckHl: false,
+        };
+    },
+    methods: {},
+});
 
-    let waitToAddUrlText = pureTextWithCutVal;
-    splitStrings.forEach((url) => {
-        let cleanUrlText = url.replace(
-            /(.{2})<Udef_wiki[^<]*>([^<]*)<\/Udef_wiki>(.{2})/,
-            "$1$2$3"
-        );
-        waitToAddUrlText = waitToAddUrlText.replace(cleanUrlText, url);
-    });
-    return waitToAddUrlText;
-}
-
+Vue.component("treeselect", VueTreeselect.Treeselect);
 const app = new Vue({
     el: "#app",
-    computed: {},
     data: {
-        newDocument: new WikiXmlMetadata(),
-        wikiDocuments: [],
-        isInputDataValid: true,
-        isMetadataComplete: true,
-        isKeepFormat: "Yes",
-        isAddHyperlink: true,
-        urlFieldHint: "",
-        isInputEmpty: false,
-        wikiUrls: "",
-        wikiContents: "",
-        filename: "",
-        isSeperateByParagraph: "default",
-        isAddExtendedLinks: false,
-        isAddMenuToDownload: false,
-        extendedLinks: [],
-        confirmLinks: [],
-        sourceWord: "",
-        corpusName: "",
-        corpusDefault: "文獻集名稱：預設「我的資料集」",
-        tableOfContents: [],
-        tempMenuList: [],
-        treeShowMenu: [],
+        wordSelection: undefined,
+        wordRange: undefined,
+        wikiTags: "",
+        selectTag: "",
+        isTagOpen: false,
+        open: false,
+        overlay: true,
+        fullheight: true,
+        fullwidth: false,
+        right: false,
+        isImageModalActive: false,
+        isCardModalActive: false,
+        isOpenMenu: false,
+        menuOfWiki: [],
+        keyword: "",
+        testInputCut: "",
+        testOutput: [],
+        searchResult: "",
+        filterResult: [],
+        getCleanText: "",
+        contentNeededList: null,
         sortValueBy: "INDEX",
         valueConsistsOf: "ALL",
-        tempSelectMenu: [],
-        selectedBookMenuPool: [],
-        menuIndexCount: 0,
-        refLinks: [],
-        selectRefLinks: [],
-        wikiContentSnippet: "",
-        isCheckBook: false,
-        kidsWord: "",
-        testModal: true,
-        isImageModalActive: false,
-        wikiContentWaitCut: [],
-        splitCompleteWikiContents: [],
+        test: `
+<p>《水經注》四十卷，後魏酈道元撰。道元字善長，范陽人，官至御史中尉，事跡具《魏書‧酷吏傳》。自晉以來，注《水經》者凡二家。郭璞注三卷，杜佑作《通典》時猶見之。今惟道元所注存。《崇文總目》稱其中已佚五卷，故《元和郡縣志》、《太平寰宇記》所引滹沱水、洛水、涇水，皆不見於今書。然今書仍作四十卷，蓋宋人重刊，分析以足原數也。是書自明以來，絕無善本。惟朱謀㙔所校，盛行於世，猶屬宋槧善本也。而舛謬亦復相仍。今以《永樂大典》所引，各案水名，逐條參校。非惟字句之譌，層出疊見。其中脫簡錯簡，有自數十字至四百餘字者，其道元自序一篇，諸本皆佚，亦惟《永樂大典》僅存。蓋當時所據，猶屬宋槧善本也。
+
+謹排比原文，與近代本鉤稽校勘。凡補其闕漏者，二千一百二十八字；刪其妄增者，一千四百四十八字；正其臆改者，三千七百一十五字。神明煥然，頓還舊觀，三四百年之疑竇，一旦曠若發蒙。是皆我皇上稽古右文，經籍道盛，瑯嬛宛委之祕，響然竝臻。遂使前代遺編，幸逢昌運，發其光於蠹簡之中，若有神物撝呵，以待聖朝而出者，是亦曠世之一遇矣。至於經文注語，諸本率多混淆。今考驗舊文，得其端緒。凡水道所經之地，經則雲過，注則雲逕。經則統擧都會，注則兼及繁碎地名。凡一水之名，經則首句標明，後不重擧，注則文多旁涉，必重擧其名以更端。凡書內郡縣，經則但擧當時之名，注則兼考故城之跡。皆尋其義例，一一釐定，各以案語附於下方。至塞外羣流、江南諸派，道元足跡，皆所未經，故於灤河之正源、三藏水之次序、白檀要陽之建置，俱不免附會乖錯。甚至以浙江妄合姚江，尤爲傳聞失實。</p>`
     },
     methods: {
-        cleanUrlField: function () {
-            this.wikiUrls = "";
-            this.urlFieldHint = "";
-            this.isInputEmpty = false;
-            this.wikiDocuments = [];
-            textCount = 1;
+        getPos: function (e) {
+            console.log(e.pageX, e.pageY);
         },
-        // parseWikiLinksFromUser: async function () {
-        //     if (!this.checkForm()) return;
-        //     for (wikiUrl of this.wikiUrls.split("\n").filter((x) => x)) {
-        //         await getWikisourceJson(wikiUrl);
-        //     }
-        // },
-        getQueryResult: function () {
-            if (this.sourceWord == "") return;
-            this.refLinks = [];
-            this.selectRefLinks = [];
-            this.confirmLinks = [];
-            this.tableOfContents = [];
-            searchWord(this.sourceWord);
+        print: function (e) {
+            this.isTagOpen = true;
+            this.$nextTick(() => {
+                this.$refs.selbox.style.left = `${e.pageX}px`;
+                this.$refs.selbox.style.top = `${e.pageY}px`;
+            });
+            this.wordSelection = window.getSelection();
         },
-        getSnippet: async function () {
-            getSnippet("水經注");
+        setTag: function () {
+            let z = this.wordSelection.toString();
+            console.log(z)
+            let y = document.createElement("mark");
+            y.setAttribute('tag', this.selectTag);
+            y.appendChild(document.createTextNode(z));
+            this.wordSelection.deleteFromDocument();
+            this.wordSelection.getRangeAt(0).insertNode(y);
+            this.isTagOpen = false;
         },
-        getMenuOfContent: async function (index) {
-            this.getRefLink(index);
-            await getSnippet(this.extendedLinks[index]);
-            let targetFindExistedMenu = this.tableOfContents.find(
-                (x) => x.index === index
-            );
-            this.menuIndexCount = index;
-            if (targetFindExistedMenu != undefined) {
-                this.treeShowMenu = targetFindExistedMenu.menu;
-                this.isAddMenuToDownload = true;
-            } else {
-                await getWikisourceJson(this.extendedLinks[index], 0);
-                this.tableOfContents.push({
-                    index: index,
-                    searchName: this.extendedLinks[index],
-                    menu: this.tempMenuList,
+        getTableOfContents: async function () {
+            this.menuOfWiki = [];
+            await getWikisourceJson(this.keyword, 0);
+        },
+        cutText: function () {
+            this.testOutput = this.testInputCut
+                .split(/[(####)|(\n)]/)
+                .map((x) => x.trim())
+                .filter((el) => {
+                    return el != null && el != "";
                 });
-                this.treeShowMenu = this.tempMenuList;
-                this.isAddMenuToDownload = true;
-            }
-            this.tempMenuList = [];
-            this.tempSelectMenu = [];
         },
-        addSelectedMenuItem: function () {
-            this.selectedBookMenuPool.push({
-                menu: this.tempSelectMenu,
-                bookName: this.treeShowMenu[0].id,
-                index: this.menuIndexCount,
-            });
-            this.tempSelectMenu = [];
-            this.confirmAdd(1);
-            this.isAddMenuToDownload = false;
-        },
-        getRefLink: function (index) {
-            this.refLinks = [];
-            getDeeperLink(this.extendedLinks[index]);
-        },
-        searchDeeper: function () {
-            this.extendedLinks = [];
-            this.confirmLinks = [];
-            if (!this.checkForm()) return;
-            getDeeperLink(this.wikiUrls);
-        },
-        openSelectBookList: function () {
-            this.selectedBookMenuPool.sort((x, y) => x.index - y.index);
-            this.isCheckBook = true;
-        },
-        deleteChapter: function (count, ind) {
-            let x = this.selectedBookMenuPool[count].menu[ind];
-            this.selectedBookMenuPool[count].menu.splice(ind, 1);
-        },
-        handleWikiCutObj: function (param) {
-            this.wikiContentWaitCut.push(param);
-        },
-        splitWikiContents: function () {
-            this.splitCompleteWikiContents = splitAndUrlHandler(
-                this.wikiContentWaitCut
-            );
-        },
-        checkForm: function (e) {
-            if (!this.wikiUrls) {
-                this.urlFieldHint = "is-danger";
-                this.isInputEmpty = true;
-                return 0;
-            }
-            return 1;
-        },
-        confirmAdd: function (flag) {
-            let x = this.extendedLinks;
-            let y = this.selectRefLinks;
-            if (flag)
-                this.extendedLinks = this.extendedLinks.concat(
-                    this.selectRefLinks
-                );
-            this.selectRefLinks = [];
-            this.isAddExtendedLinks = false;
-        },
-        checkContentValue: function (obj) {
-            obj.isFixContent = !obj.isFixContent;
-            obj.isContentOpen = !obj.isContentOpen;
-        },
-        deleteContentValue: function (index) {
-            this.wikiDocuments.splice(index, 1);
-        },
-        download: function () {
-            let element = document.createElement("a");
-            let filename =
-                this.filename == ""
-                    ? `${dt.getFullYear()}_${dt.getMonth()}_${dt.getDate()}.xml`
-                    : this.filename;
-            element.setAttribute(
-                "href",
-                "data:text/xml;charset=utf-8," +
-                    encodeURIComponent(this.wikiContents)
-            );
-            element.setAttribute("download", filename);
-            element.style.display = "none";
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        },
-        copyTestingCode() {
-            let testingCodeToCopy = $("#wikiContents").select(function () {
-                try {
-                    var successful = document.execCommand("copy");
-                    var msg = successful ? "successful" : "unsuccessful";
-                    alert("Testing code was copied ");
-                } catch (err) {
-                    alert("Oops, unable to copy");
-                }
-                /* unselect the range */
-            });
-            testingCodeToCopy.setAttribute("type", "hidden");
-            window.getSelection().removeAllRanges();
-        },
-        onCopy: function (e) {
-            alert(`Copying Success!!`);
-        },
-        compressToParagraph: function () {
-            this.wikiDocuments = this.wikiDocuments.sort(function (a, b) {
-                return a.order > b.order ? 1 : -1;
-            });
-            for (let wikiDocument of this.wikiDocuments) {
-                wikiDocument.isImport.corpus =
-                    this.corpusName === "" ? "我的資料集" : this.corpusName;
-            }
-            let answer = "";
-            if (this.isSeperateByParagraph == "default") {
-                answer = convertAlltoDocuments(
-                    this.wikiDocuments,
-                    this.isAddHyperlink
-                );
-            } else if (this.isSeperateByParagraph == "seperateEachParagraph") {
-                answer = convertParagraphToDocuments(
-                    this.wikiDocuments,
-                    this.isAddHyperlink
-                );
-            } else {
-                answer = convertAlltoParagraphs(
-                    this.wikiDocuments,
-                    this.isAddHyperlink
-                );
-            }
-            this.wikiContents = answer;
-        },
-        selectAllExtendLinks: function () {
-            this.extendedLinks.forEach((ele) => {
-                this.confirmLinks.push(ele);
-            });
-        },
-        reset: function () {
-            this.newDocument = new WikiXmlMetadata();
-            this.wikiDocuments = [];
-            this.isInputDataValid = true;
-            this.isMetadataComplete = true;
-            this.isKeepFormat = "Yes";
-            this.isAddHyperlink = true;
-            this.urlFieldHint = "";
-            this.isInputEmpty = false;
-            this.wikiUrls = "";
-            this.wikiContents = "";
-            this.filename = "";
-            this.isSeperateByParagraph = "default";
-            this.isAddExtendedLinks = false;
-            this.extendedLinks = [];
-            this.confirmLinks = [];
-            this.sourceWord = "";
-            this.corpusName = "";
-            this.corpusDefault = "文獻集名稱：預設「我的資料集」";
-            textCount = 1;
+        filterSearchResult: function () {
+            let filterResult = this.searchResult
+                .split("\n")
+                .map((x) => x.replace(/\/.*$/g, ""));
+            this.filterResult = [...new Set(filterResult)];
         },
     },
+    computed: {
+        splitWikiTags: function () {
+            return this.wikiTags.split(",").filter(x=>x).map(x=>x.trim());
+        }
+    }
 });
-
-async function getDeeperLink(pageNames) {
-    pageNames = pageNames.split("\n").filter((x) => x);
-    for (pageName of pageNames) {
-        try {
-            let apiBackJson = await axios.get(
-                "https://zh.wikisource.org/w/api.php",
-                {
-                    params: {
-                        action: "parse",
-                        page: pageName,
-                        origin: "*",
-                        format: "json",
-                        utf8: "",
-                    },
-                }
-            );
-            let newLinks = await getExtendedLinks(apiBackJson.data.parse);
-            newLinks = newLinks.filter((x) => x.indexOf(pageNames) === -1);
-            app.refLinks = app.refLinks.concat(newLinks);
-        } catch (error) {
-            console.log(error);
-            alert(`請求出錯！`);
-        }
-    }
-}
-
-async function searchWord(title) {
-    try {
-        let apiBackJson = await axios.get(
-            "https://zh.wikisource.org/w/api.php",
-            {
-                params: {
-                    action: "query",
-                    list: "search",
-                    srsearch: title,
-                    origin: "*",
-                    format: "json",
-                    utf8: "",
-                    srlimit: 100,
-                },
-            }
-        );
-        let outputs = await apiBackJson.data.query.search;
-        console.log(outputs);
-        outputs = outputs.map((x) =>
-            x?.title.replace(/\/.*$/g, "").replace(/[0-9\-]*$/g, "")
-        );
-        app.refLinks = [...new Set(outputs)];
-        app.isAddExtendedLinks = true;
-    } catch (error) {
-        console.log(error);
-        alert(`請求出錯！`);
-    }
-    // app.isAddExtendedLinks = true;
-}
-
-function WikiXmlMetadata(
-    title = "",
-    author = "",
-    doc_content = [
-        {
-            paragraphs: "",
-            hyperlinks: "",
-        },
-    ]
-) {
-    this.isImport = {};
-    this.isImport.corpus = title;
-    this.isImport.title = title;
-    this.isImport.author = author;
-    this.isImport.doc_source = title.replace(/\/.*/gi, "");
-    this.isImport.doc_topic_l1 = "";
-    this.isImport.doc_topic_l2 = "";
-    this.isImport.doc_topic_l3 = "";
-    this.isImport.geo_level1 = "";
-    this.isImport.geo_level2 = "";
-    this.isImport.geo_level3 = "";
-    this.isImport.geo_longitude = "";
-    this.isImport.geo_latitude = "";
-    this.isImport.doc_category_l1 = "";
-    this.isImport.doc_category_l2 = "";
-    this.isImport.doc_category_l3 = "";
-    this.isImport.docclass = "";
-    this.isImport.doc_content = "";
-    this.isImport.docclass_aux = "";
-    this.isImport.doctype = "";
-    this.isImport.doctype_aux = "";
-    this.isImport.book_code = "";
-    this.isImport.time_orig_str = "";
-    this.isImport.time_varchar = "";
-    this.isImport.time_norm_year = "";
-    this.isImport.era = "";
-    this.isImport.time_norm_kmark = "";
-    this.isImport.year_for_grouping = "";
-    this.isImport.time_dynasty = "";
-    this.isImport.doc_seq_number = "";
-    this.isImport.timeseq_not_before = "";
-    this.isImport.timeseq_not_after = "";
-    this.isImport.doc_attachment = "";
-    this.isFixContent = false;
-    this.isContentOpen = true;
-    this.tempContent = doc_content;
-    this.fulltext = doc_content.map((x) => x.paragraphs).join("\n");
-    this.order = textCount;
-}
-
-function parseHtmlText(htmlContent, title) {
-    let doc = new DOMParser().parseFromString(htmlContent, "text/html");
-    let wikiContentSeperateParagraph = [];
-    let mainContent = $(doc).find(".mw-parser-output p,.mw-parser-output dd");
-
-    if (
-        $(mainContent).text() !== undefined &&
-        $(mainContent).text().match(/重定向/g)
-    ) {
-        alert(
-            `頁面:"${title}"被重新導向至"${$(doc)
-                .find(".mw-parser-output a")
-                .text()}"，請察看維基文庫頁面確認正確標題或搜尋`
-        );
-    }
-
-    for (let x = 0; x < 10; x++) {
-        $(mainContent)
-            .find("*:not(a)")
-            .each(function (index, element) {
-                // console.log($(element).html());
-                let x = $(element).html();
-                $(element).replaceWith(x);
-            });
-    }
-
-    $(mainContent)
-        .find("a")
-        .each(function (index, element) {
-            let linkTitle = $(element).html();
-            let linkRef =
-                $(element).attr("href") !== undefined &&
-                $(element)
-                    .attr("href")
-                    .match(/^\/wiki\//g)
-                    ? `https://zh.wikisource.org${$(element).attr("href")}`
-                    : $(element).attr("href");
-            $(element).replaceWith(
-                composeXmlString(
-                    linkTitle,
-                    "Udef_wiki",
-                    1,
-                    ` Term="${linkTitle}" Url="${linkRef}"`
-                )
-            );
-        });
-
-    $(mainContent).each(function (index, element) {
-        let parseSentence = $(element)
-            .text()
-            .replace(/\s/gm, "")
-            .replace(/^\r\n|^\n/gm, "")
-            .replace(
-                /（并请在校对之后从条目的源代码中删除本模版：{{简转繁}}）/gm,
-                ""
-            )
-            .replace(/&lt;(\W+)&gt;/g, "【$1】");
-        let parseSentenceWithHtml = $(element)
-            .html()
-            .replace(/&lt;(\W+)&gt;/g, "【$1】");
-        if (!/(屬於公有領域)/gm.test(parseSentence) && parseSentence != "") {
-            wikiContentSeperateParagraph.push({
-                paragraphs: parseSentence,
-                hyperlinks: parseSentenceWithHtml
-                    .replace(/udef_wiki/g, "Udef_wiki")
-                    .replace(/url/g, "Url")
-                    .replace(/term/g, "Term"),
-            });
-        }
-    });
-    let pureText = wikiContentSeperateParagraph
-        .map((element) => {
-            return element.paragraphs;
-        })
-        .join("\n");
-    let urlLinkText = wikiContentSeperateParagraph
-        .map((element) => {
-            return element.hyperlinks;
-        })
-        .join("\n");
-    return { paragraphs: pureText, hyperlinks: urlLinkText };
-}
-
-function parseAuthor(htmlContent) {
-    let doc = new DOMParser().parseFromString(htmlContent, "text/html");
-    let wikiAuthor = "";
-    $(doc)
-        .find(`a`)
-        .each(function (index, element) {
-            if (
-                $(element).prop("title") !== undefined &&
-                $(element)
-                    .prop("title")
-                    .match(/Author:.*/)
-            ) {
-                wikiAuthor = $(element)
-                    .prop("title")
-                    .replace(/Author:|（(頁面不存在)*）/g, "");
-            }
-        });
-    return wikiAuthor;
-}
-
-function parseHtmlHyperlinkText(htmlContent) {
-    let doc = new DOMParser().parseFromString(htmlContent, "text/html");
-    let wikiContentSeperateParagraph = [];
-    $(doc)
-        .find(`a`)
-        .each(function (index, element) {
-            if (
-                $(element).attr("href") != undefined &&
-                $(element).text() !== "" &&
-                $(element)
-                    .attr("href")
-                    .match(/^\/wiki\//g)
-            ) {
-                let wikilink =
-                    $(element).attr("href") !== undefined &&
-                    $(element)
-                        .attr("href")
-                        .match(/^\/wiki\//g)
-                        ? `https://zh.wikisource.org${$(element).attr("href")}`
-                        : $(element).attr("href");
-                wikiContentSeperateParagraph.push(
-                    `<Udef_wiki Term="${$(
-                        element
-                    ).text()}" Url="${wikilink}">${$(
-                        element
-                    ).text()}<Udef_wiki>`
-                );
-            }
-        });
-    return wikiContentSeperateParagraph.join("\n");
-}
-
-async function getExtendedLinks(wikiJson) {
-    let wikiKeyword = [];
-    if (wikiJson.hasOwnProperty("links")) {
-        wikiJson.links.forEach((element, index) => {
-            if (isEssensialKey(element["*"])) {
-                wikiKeyword.push(element["*"]);
-            }
-        });
-    }
-    return wikiKeyword;
-}
-
-function convertAlltoDocuments(wikiObjs, isAddHyperlink = true) {
-    let eachDoc = "";
-    let allDocs = [];
-    wikiObjs.forEach((obj, index) => {
-        let fullContext = obj.tempContent
-            .map((x) =>
-                isAddHyperlink
-                    ? composeXmlString(x.hyperlinks, "Paragraph", 1)
-                    : composeXmlString(x.paragraphs, "Paragraph", 1)
-            )
-            .join("\n");
-        for (let docVal in obj.isImport) {
-            eachDoc +=
-                docVal == "doc_content"
-                    ? composeXmlString(fullContext, docVal, 1)
-                    : composeXmlString(obj.isImport[docVal], docVal);
-        }
-        allDocs.push(
-            composeXmlString(
-                eachDoc,
-                "document",
-                1,
-                ` filename="${padding(index + 1, 3)}.txt"`
-            )
-        );
-        eachDoc = "";
-    });
-    let final = endFile(allDocs.join("\n"));
-    return final.replace(/^\r\n|^\n/gm, "");
-}
-
-function convertAlltoParagraphs(wikiObjs, isAddHyperlink = true) {
-    let allParagraphs = [];
-    let eachDoc = "";
-    wikiObjs.forEach((obj, index) => {
-        allParagraphs.push(
-            obj.tempContent
-                .map((x) =>
-                    isAddHyperlink
-                        ? composeXmlString(x.hyperlinks, "Paragraph", 1)
-                        : composeXmlString(x.paragraphs, "Paragraph", 1)
-                )
-                .join("\n")
-        );
-    });
-
-    allParagraphs = allParagraphs.join("\n");
-
-    for (let docVal in wikiObjs[0].isImport) {
-        eachDoc +=
-            docVal == "doc_content"
-                ? composeXmlString(allParagraphs, docVal, 1)
-                : composeXmlString(wikiObjs[0].isImport[docVal], docVal);
-    }
-
-    let final = composeXmlString(
-        eachDoc,
-        "document",
-        1,
-        ` filename="${padding(1, 3)}.txt"`
-    );
-    return endFile(final).replace(/^\r\n|^\n/gm, "");
-}
-
-function convertParagraphToDocuments(wikiObjs, isAddHyperlink = true) {
-    let docs = [];
-    let eachDoc = "";
-    let count = 1;
-    wikiObjs.forEach((obj, index) => {
-        obj.tempContent.forEach((paraData, ind) => {
-            let eachWikiDoc = isAddHyperlink
-                ? composeXmlString(paraData.hyperlinks, "Paragraph", 1)
-                : composeXmlString(paraData.paragraphs, "Paragraph", 1);
-            for (let docVal in obj.isImport) {
-                eachDoc +=
-                    docVal == "doc_content"
-                        ? composeXmlString(eachWikiDoc, docVal, 1)
-                        : composeXmlString(obj.isImport[docVal], docVal);
-            }
-            docs.push(
-                composeXmlString(
-                    eachDoc,
-                    "document",
-                    1,
-                    ` filename="${padding(count, 3)}.txt"`
-                )
-            );
-            eachDoc = "";
-            count++;
-        });
-    });
-
-    let final = endFile(docs.join("\n"));
-    return final.replace(/^\r\n|^\n/gm, "");
-}
-
-function endFile(data = "") {
-    let corpusContent = `<corpus name="*">
-<metadata_field_settings>
-<author>作者</author>
-<title>Wiki文本標題</title>
-<doc_content>文本內容</doc_content>
-</metadata_field_settings>
-<feature_analysis>
-<tag name="Udef_wiki" type="contentTagging" default_category="Udef_wiki" default_sub_category="-"/>
-</feature_analysis>
-</corpus>`;
-    return `<?xml version="1.0"?>${composeXmlString(
-        corpusContent + composeXmlString(data, "documents", 1),
-        "ThdlPrototypeExport",
-        1
-    )}`;
-}
-
-function padding(num, length) {
-    for (var len = (num + "").length; len < length; len = num.length) {
-        num = "0" + num;
-    }
-    return num;
-}
-
-function isEssensialKey(text) {
-    return text.match(
-        /(Category.*)|(Author.*)|(Wikisource.*)|(Template.*)|(模块.*)/g
-    )
-        ? false
-        : true;
-}
-
-function composeXmlString(source, xmlAttribute, isBreak = 0, addValue = "") {
-    return isBreak == 0
-        ? `<${xmlAttribute}${addValue}>${source}</${xmlAttribute}>\n`
-        : `<${xmlAttribute}${addValue}>${source}</${xmlAttribute}>`;
-}
 
 async function getWikisourceJson(title, count, saveContent = {}) {
     if (!("numOfDir" in saveContent)) {
@@ -784,8 +167,7 @@ async function getWikisourceJson(title, count, saveContent = {}) {
     }
     try {
         let apiBackJson = await axios.get(
-            "https://zh.wikisource.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&utf8",
-            {
+            "https://zh.wikisource.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&utf8", {
                 params: {
                     titles: title,
                     origin: "*",
@@ -799,53 +181,54 @@ async function getWikisourceJson(title, count, saveContent = {}) {
         let wikiDocNum = getWikiNum(apiBackJson.query.pages);
         let dirtyText = apiBackJson.query.pages[wikiDocNum].revisions[0]["*"];
         let wikiTitle = apiBackJson.query.pages[wikiDocNum].title;
-        // console.log(dirtyText);
         let cleanText = dirtyText.match(/.*\[\[(\/*.*)\|*.*\]\]/gm);
         cleanText = cleanText
             .join("\n")
             .replace(/^\n/gm, "")
             .replace(/^\n/gm, "");
-        cleanText = cleanText.match(/^[*#!].*\[\[(.*)\|*.*\]\]/gm);
-        if (cleanText) {
-            cleanText = cleanText.join("\n");
-
-            cleanText = cleanText
-                .replace(/.*\[\[(.*\/*.*)\|*.*\]\]/gm, "$1")
-                .replace(/\|.*/gm, "");
-            let wikiArrayCut = cleanText.split("\n");
-            saveContent.numOfDir += wikiArrayCut.length;
-            for (let i = 0; i < wikiArrayCut.length; i++) {
-                saveContent.numOfDir--;
-                if (/^\/.*/.test(wikiArrayCut[i])) {
-                    wikiArrayCut[i] = wikiTitle + wikiArrayCut[i];
-                }
-                if (
-                    app.tempMenuList.indexOf(wikiArrayCut[i]) == -1 &&
-                    !/.*全覽.*/.test(wikiArrayCut[i])
-                ) {
-                    app.tempMenuList.push({
-                        index: i,
-                        value: wikiArrayCut[i],
-                    });
-                    // console.log(
-                    //     `這是第${count}層，祖宗/title是${title},${wikiArrayCut[i]}\n`
-                    // );
-                    getWikisourceJson(wikiArrayCut[i], count + 1, saveContent);
-                }
+        // console.log(cleanText)
+        cleanText = cleanText.match(/^[*#!].*\[\[(.*)\|*.*\]\]/gm).join("\n");
+        cleanText = cleanText
+            .replace(/.*\[\[(.*\/*.*)\|*.*\]\]/gm, "$1")
+            .replace(/\|.*/gm, "");
+        // console.log(cleanText);
+        let wikiArrayCut = cleanText.split("\n");
+        saveContent.numOfDir += wikiArrayCut.length;
+        for (let i = 0; i < wikiArrayCut.length; i++) {
+            saveContent.numOfDir--;
+            if (/^\/.*/.test(wikiArrayCut[i])) {
+                wikiArrayCut[i] = wikiTitle + wikiArrayCut[i];
             }
-            console.log(`目前的count來到：${saveContent.numOfDir}`);
-            if (saveContent.numOfDir === 0) {
-                tableTreeGenerate(app.tempMenuList);
+            if (
+                app.menuOfWiki.indexOf(wikiArrayCut[i]) == -1 &&
+                !/.*全覽.*/.test(wikiArrayCut[i])
+            ) {
+                app.menuOfWiki.push({
+                    index: i,
+                    value: wikiArrayCut[i],
+                });
+                // console.log(
+                //     `這是第${count}層，祖宗/title是${title},${wikiArrayCut[i]}\n`
+                // );
+                getWikisourceJson(wikiArrayCut[i], count + 1, saveContent);
             }
-        } else if (!cleanText && saveContent.numOfDir == 0) {
-            app.tempMenuList.push({
-                index: 0,
-                value: title,
-            });
-            tableTreeGenerate(app.tempMenuList);
         }
+        console.log(`目前的count來到：${saveContent.numOfDir}`);
+        if (saveContent.numOfDir === 0) {
+            tableTreeGenerate(app.menuOfWiki);
+        }
+        // cleanText.split("\n").forEach(async (ele) => {
+        //     if(/^\/.*/.test(ele)) {
+        //         ele = wikiTitle + ele;
+        //     }
+        //     if(app.menuOfWiki.indexOf(ele)==-1 && !/.*全覽.*/.test(ele)) {
+        //         await app.menuOfWiki.push(ele);
+        //         await console.log(`這是第${count}層，title是${ele}\n`);
+        //         await getWikisourceJson(ele, count+1, saveContent);
+        //     }
+        // })
     } catch (error) {
-        // console.log(error);
+        console.log(error);
     }
 }
 
@@ -866,10 +249,12 @@ function tableTreeGenerate(wikis) {
     items.forEach(function (path) {
         let logArray = path.value.split("/");
         logArray.reduce(function (level, key, index) {
-            let temp = level.find(({ id }) => key === id);
+            let temp = level.find(({
+                id
+            }) => key === id);
             let isLeaf = true;
             if (!temp) {
-                isLeaf = index === logArray.length ? true : false;
+                isLeaf = index === logArray.length - 1 ? true : false;
                 temp = {
                     id: key,
                     label: key,
@@ -884,98 +269,38 @@ function tableTreeGenerate(wikis) {
         }, result);
     });
     treeIndexSort(result);
-    app.tempMenuList = result;
+    console.log(result);
+    app.menuOfWiki = result;
 }
 
 function treeIndexSort(resultTree, path = "", count = 1) {
     for (
-        let iterTreeCount = 0;
-        iterTreeCount < resultTree.length;
-        iterTreeCount++
+        let iterTreeCount = 0; iterTreeCount < resultTree.length; iterTreeCount++
     ) {
         resultTree[iterTreeCount].index = count;
-        resultTree[
-            iterTreeCount
-        ].id = `${path}/${resultTree[iterTreeCount].label}`.replace(/^\//, "");
-        let expo = resultTree[iterTreeCount];
+        resultTree[iterTreeCount].id =
+            path === "" ?
+            `${resultTree[iterTreeCount].label}` :
+            `${path}/${resultTree[iterTreeCount].label}`;
         count++;
-        if (resultTree[iterTreeCount].children.length !== 0) {
+        if (!resultTree[iterTreeCount].isLeaf) {
             count = treeIndexSort(
                 resultTree[iterTreeCount].children,
                 resultTree[iterTreeCount].id,
                 count
             );
-        } else {
-            resultTree[iterTreeCount].isLeaf = true;
         }
     }
     return count;
 }
 
-async function getSnippet(title) {
-    try {
-        let apiBackJson = await axios.get(
-            "https://zh.wikisource.org/w/api.php",
-            {
-                params: {
-                    action: "parse",
-                    page: title,
-                    origin: "*",
-                    format: "json",
-                    utf8: "",
-                },
-            }
-        );
-        apiBackJson = apiBackJson.data.parse.text["*"];
-        let doc = new DOMParser().parseFromString(apiBackJson, "text/html");
-        let snip = $(doc)
-            .find("div#headerContainer.ws-noexport.noprint table tbody tr td")
-            .text();
-        snip = snip
-            .replace(/姊妹計劃.*/g, "")
-            .replace(/版本信息.*/g, "")
-            .replace(/(維基百科條目|维基百科條目).*/g, "");
-        app.wikiContentSnippet = snip;
-    } catch (error) {}
-}
-
-(async () => {
-    await getWikiPage(`三國演義/第001回`);
-})();
-
-async function getWikiPage(title) {
-    try {
-        let apiBackJson = await axios.get(
-            "https://zh.wikisource.org/w/api.php",
-            {
-                params: {
-                    action: "parse",
-                    page: title,
-                    origin: "*",
-                    format: "json",
-                    utf8: "",
-                },
-            }
-        );
-        console.log(apiBackJson.data.parse);
-        return apiBackJson.data.parse;
-    } catch (error) {
-        console.log(error);
-        alert(`請求出錯！`);
-    }
-}
-
-function splitAndUrlHandler(unCutContents) {
-    let splitParagraphs = [];
-    unCutContents.forEach((content) => {
-        let useContent =
-            content.isUrlAllow === true
-                ? content.wikiText.hyperlinks
-                : content.wikiText.paragraphs;
-        let re = content.isParagraphCut === true ? /####|\n/ : /####/;
-        let cutParas = useContent.split(re);
-        console.log("print: ", cutParas);
-        splitParagraphs = splitParagraphs.concat(cutParas);
-    });
-    return splitParagraphs;
-}
+//TODO: 讓爬蟲得到的html可以附加屬性且與vue互動
+//法一:用replace或是jquery的css把顏色加上去再放進v-html
+//<div v-html="article.content" class="article--content"></div>
+//可以在div中先指定一個樣式然後用深度選擇器去改變！
+//https://happyjayxin.medium.com/%E5%A6%82%E4%BD%95%E6%94%B9%E8%AE%8A-vue-%E4%B8%AD-v-html-%E8%A3%A1%E9%9D%A2%E7%9A%84%E6%A8%A3%E5%BC%8F-9fcdf0c49130
+//將乾淨的字從html拋出
+/* function strip(html){
+   let doc = new DOMParser().parseFromString(html, 'text/html');
+   return doc.body.textContent || "";
+}*/
