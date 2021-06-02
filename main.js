@@ -1,3 +1,7 @@
+$( document ).ready(function() {
+    console.log( "ready!" );
+});
+
 Vue.component("menu-list", {
     template: `<div id="menu-list" class="content"> 
     <div v-for="newTree in treeData">
